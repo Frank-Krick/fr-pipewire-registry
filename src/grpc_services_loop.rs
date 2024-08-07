@@ -1,60 +1,14 @@
-use fr_pipewire_registry::node_server::{Node, NodeServer};
-use fr_pipewire_registry::{ListNode, ListNodesReply, ListNodesRequest};
-use tonic::{transport::Server, Request, Response, Status};
+use tonic::transport::Server;
 
+use crate::grpc_services::node_service::NodeService;
 use crate::logging::Logger;
 use crate::pipewire_registry::GetNodesListRequest;
-
-pub mod fr_pipewire_registry {
-    tonic::include_proto!("fr_pipewire_registry");
-}
-
-#[derive(Debug)]
-pub struct NodeService {
-    get_nodes_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetNodesListRequest>,
-}
-
-impl NodeService {
-    fn new(
-        get_nodes_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetNodesListRequest>,
-    ) -> NodeService {
-        NodeService {
-            get_nodes_list_request_sender,
-        }
-    }
-}
-
-#[tonic::async_trait]
-impl Node for NodeService {
-    async fn list_nodes(
-        &self,
-        _request: Request<ListNodesRequest>,
-    ) -> Result<Response<ListNodesReply>, Status> {
-        let (sender, receiver) = tokio::sync::oneshot::channel();
-        let service_request = GetNodesListRequest {
-            reply_sender: sender,
-        };
-        self.get_nodes_list_request_sender
-            .send(service_request)
-            .unwrap();
-        let service_reply = receiver.await.unwrap();
-        let reply = ListNodesReply {
-            nodes: service_reply
-                .into_iter()
-                .map(|n| ListNode { name: n.node_name })
-                .collect(),
-        };
-
-        Ok(Response::new(reply))
-    }
-}
 
 pub fn run_grpc_service(
     logger: &Logger,
     get_nodes_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetNodesListRequest>,
 ) {
-    let node_service = NodeService::new(get_nodes_list_request_sender);
-    tokio::runtime::Builder::new_multi_thread()
+    tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap()
@@ -68,7 +22,7 @@ pub fn run_grpc_service(
             };
 
             Server::builder()
-                .add_service(NodeServer::new(node_service))
+                .add_service(NodeService::new_server(get_nodes_list_request_sender))
                 .serve(addr)
                 .await
                 .unwrap();

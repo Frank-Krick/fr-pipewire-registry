@@ -4,6 +4,7 @@ use std::thread;
 use rlg::log::Log;
 
 mod config;
+mod grpc_services;
 mod grpc_services_loop;
 mod logging;
 mod pipewire_event_consumer;
