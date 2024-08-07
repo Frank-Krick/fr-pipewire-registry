@@ -1,0 +1,12 @@
+syntax = "proto3";
+package fr_pipewire_registry;
+
+service Node {
+  rpc ListNodes(ListNodesRequest) returns (ListNodesReply);
+}
+
+message ListNodesRequest {}
+
+message ListNode { string name = 1; }
+
+message ListNodesReply { repeated ListNode nodes = 1; }
