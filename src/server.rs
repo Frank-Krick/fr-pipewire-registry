@@ -26,9 +26,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let (get_node_list_request_sender, get_node_list_request_receiver) =
         tokio::sync::mpsc::unbounded_channel();
+    let (get_port_list_request_sender, get_port_list_request_receiver) =
+        tokio::sync::mpsc::unbounded_channel();
     let grpc_logger = logger_factory.new_logger(String::from("gRPC Service"));
     let _grpc_services_thread = thread::spawn(move || {
-        grpc_services_loop::run_grpc_service(&grpc_logger, get_node_list_request_sender)
+        grpc_services_loop::run_grpc_service(
+            &grpc_logger,
+            get_node_list_request_sender,
+            get_port_list_request_sender,
+        )
     });
 
     let (device_update_sender, device_update_receiver) = tokio::sync::mpsc::unbounded_channel();
@@ -46,6 +52,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     port_update_receiver,
                     node_update_receiver,
                     get_node_list_request_receiver,
+                    get_port_list_request_receiver,
                 );
                 pipewire_registry.run(&pipewire_registry_logger).await;
             });

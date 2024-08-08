@@ -1,12 +1,14 @@
 use tonic::transport::Server;
 
 use crate::grpc_services::node_service::NodeService;
+use crate::grpc_services::port_service::PortService;
 use crate::logging::Logger;
-use crate::pipewire_registry::GetNodesListRequest;
+use crate::pipewire_registry::{GetNodesListRequest, GetPortsListRequest};
 
 pub fn run_grpc_service(
     logger: &Logger,
     get_nodes_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetNodesListRequest>,
+    get_ports_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetPortsListRequest>,
 ) {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -23,6 +25,7 @@ pub fn run_grpc_service(
 
             Server::builder()
                 .add_service(NodeService::new_server(get_nodes_list_request_sender))
+                .add_service(PortService::new_server(get_ports_list_request_sender))
                 .serve(addr)
                 .await
                 .unwrap();

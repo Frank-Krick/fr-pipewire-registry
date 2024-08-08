@@ -10,7 +10,7 @@ use crate::pipewire_event_consumer::{
 
 #[derive(Debug, PartialEq, PartialOrd, Ord, Eq, Clone, Copy)]
 #[allow(dead_code)]
-enum PortDirection {
+pub enum PortDirection {
     In,
     Out,
     Unknown,
@@ -42,19 +42,23 @@ impl Node {
     }
 }
 
-#[derive(Debug)]
+pub struct GetPortsListRequest {
+    pub reply_sender: tokio::sync::oneshot::Sender<Vec<Port>>,
+}
+
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
-struct Port {
-    id: u16,
-    node_id: u16,
-    name: String,
-    direction: PortDirection,
-    physical: bool,
-    alias: String,
-    group: String,
-    path: String,
-    dsp_format: String,
-    audio_channel: String,
+pub struct Port {
+    pub id: u16,
+    pub node_id: u16,
+    pub name: String,
+    pub direction: PortDirection,
+    pub physical: bool,
+    pub alias: String,
+    pub group: String,
+    pub path: String,
+    pub dsp_format: String,
+    pub audio_channel: String,
 }
 
 impl Port {
@@ -87,6 +91,7 @@ pub struct PipewireRegistry {
     port_update_receiver: UnboundedReceiver<PipewirePortUpdate>,
     node_update_receiver: UnboundedReceiver<PipewireNodeUpdate>,
     node_list_request_receiver: UnboundedReceiver<GetNodesListRequest>,
+    port_list_request_receiver: UnboundedReceiver<GetPortsListRequest>,
     ports: BTreeMap<(PortDirection, u16, u16), Port>,
     nodes: Vec<Node>,
 }
@@ -97,12 +102,14 @@ impl PipewireRegistry {
         port_update_receiver: UnboundedReceiver<PipewirePortUpdate>,
         node_update_receiver: UnboundedReceiver<PipewireNodeUpdate>,
         node_list_request_receiver: UnboundedReceiver<GetNodesListRequest>,
+        port_list_request_receiver: UnboundedReceiver<GetPortsListRequest>,
     ) -> Self {
         PipewireRegistry {
             device_update_receiver,
             port_update_receiver,
             node_update_receiver,
             node_list_request_receiver,
+            port_list_request_receiver,
             ports: BTreeMap::new(),
             nodes: Vec::new(),
         }
@@ -135,6 +142,11 @@ impl PipewireRegistry {
                 node_list_request = self.node_list_request_receiver.recv() => {
                     logger.log_info("Received node list request");
                     node_list_request.unwrap().reply_sender.send(self.nodes.clone()).unwrap();
+                }
+                port_list_request = self.port_list_request_receiver.recv() => {
+                    logger.log_info("Received port list request");
+                    port_list_request.unwrap().reply_sender.send(
+                        self.ports.values().cloned().collect()).unwrap();
                 }
             };
         }

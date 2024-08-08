@@ -27,6 +27,7 @@ rlg = "0.0.4"
 chrono = "0.4.38"
 features = "0.10.0"
 futures = "0.3.30"
+clap = { version = "4.5.13", features = ["derive"] }
 
 [build-dependencies]
 tonic-build = "0.12"

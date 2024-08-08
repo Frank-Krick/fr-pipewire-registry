@@ -1,5 +1,5 @@
 syntax = "proto3";
-package fr_pipewire_registry;
+package fr_pipewire_registry.nodes;
 
 service Node {
   rpc ListNodes(ListNodesRequest) returns (ListNodesReply);

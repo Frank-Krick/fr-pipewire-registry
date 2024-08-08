@@ -1,0 +1,12 @@
+syntax = "proto3";
+package fr_pipewire_registry.ports;
+
+service Port {
+  rpc ListPorts(ListPortsRequest) returns (ListPortsReply);
+}
+
+message ListPortsRequest {}
+
+message ListPort { string name = 1; }
+
+message ListPortsReply { repeated ListPort ports = 1; }

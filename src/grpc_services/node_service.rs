@@ -5,7 +5,7 @@ use tonic::{Request, Response, Status};
 use crate::pipewire_registry::GetNodesListRequest;
 
 pub mod fr_pipewire_registry {
-    tonic::include_proto!("fr_pipewire_registry");
+    tonic::include_proto!("fr_pipewire_registry.nodes");
 }
 
 #[derive(Debug)]
@@ -16,7 +16,7 @@ pub struct NodeService {
 impl NodeService {
     pub fn new(
         get_nodes_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetNodesListRequest>,
-    ) -> NodeService {
+    ) -> Self {
         NodeService {
             get_nodes_list_request_sender,
         }
