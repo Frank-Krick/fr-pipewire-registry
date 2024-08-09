@@ -12,6 +12,7 @@ use tokio::sync::mpsc::UnboundedSender as Sender;
 
 use crate::config::MixerConfig;
 use crate::logging::Logger;
+use crate::pipewire_event_consumer::PipewireApplicationUpdate;
 use crate::pipewire_event_consumer::PipewireDeviceUpdate;
 use crate::pipewire_event_consumer::PipewireEventConsumer;
 use crate::pipewire_event_consumer::PipewireNodeUpdate;
@@ -23,6 +24,7 @@ pub fn run_pipewire_loop(
     pipewire_device_sender: Sender<PipewireDeviceUpdate>,
     pipewire_port_sender: Sender<PipewirePortUpdate>,
     pipewire_node_sender: Sender<PipewireNodeUpdate>,
+    pipewire_application_sender: Sender<PipewireApplicationUpdate>,
     factory_names_one_shot_sender: tokio::sync::oneshot::Sender<Factories>,
 ) -> Result<()> {
     logger.log_info("Starting Pipewire Loop");
@@ -36,6 +38,7 @@ pub fn run_pipewire_loop(
         pipewire_device_sender,
         pipewire_port_sender,
         pipewire_node_sender,
+        pipewire_application_sender,
     );
     let listener = registry
         .add_listener_local()

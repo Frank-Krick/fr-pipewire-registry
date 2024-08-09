@@ -1,0 +1,23 @@
+syntax = "proto3";
+package fr_pipewire_registry.application;
+
+service Application {
+  rpc ListApplications(ListApplicationsRequest) returns (ListApplicationsReply);
+}
+
+message ListApplicationsRequest {}
+
+message ListApplication {
+  uint32 object_serial = 1;
+  uint32 module_id = 2;
+  string pipewire_protocol = 3;
+  string pipewire_sec_pid = 4;
+  string pipewire_sec_uid = 5;
+  string pipewire_sec_gid = 6;
+  string pipewire_sec_socket = 7;
+  string pipewire_access = 8;
+  string name = 9;
+}
+
+message ListApplicationsReply { repeated ListApplication applications = 1; }
+

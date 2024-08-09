@@ -1,5 +1,5 @@
 use fr_pipewire_registry::port_server::{Port, PortServer};
-use fr_pipewire_registry::{ListPort, ListPortsReply, ListPortsRequest};
+use fr_pipewire_registry::{ListPort, ListPortsReply, ListPortsRequest, PortDirection};
 use tonic::{Request, Response, Status};
 
 use crate::pipewire_registry::GetPortsListRequest;
@@ -45,7 +45,24 @@ impl Port for PortService {
         let reply = ListPortsReply {
             ports: service_reply
                 .into_iter()
-                .map(|p| ListPort { name: p.name })
+                .map(|p| ListPort {
+                    id: p.id as u32,
+                    node_id: p.node_id as u32,
+                    name: p.name,
+                    direction: match p.direction {
+                        crate::pipewire_registry::PortDirection::In => PortDirection::In as i32,
+                        crate::pipewire_registry::PortDirection::Out => PortDirection::Out as i32,
+                        crate::pipewire_registry::PortDirection::Unknown => {
+                            PortDirection::Unknown as i32
+                        }
+                    },
+                    physical: p.physical,
+                    alias: p.alias,
+                    group: p.group,
+                    path: p.path,
+                    dsp_format: p.dsp_format,
+                    audio_channel: p.audio_channel,
+                })
                 .collect(),
         };
         Ok(Response::new(reply))

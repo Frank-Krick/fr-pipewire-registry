@@ -7,6 +7,14 @@ service Node {
 
 message ListNodesRequest {}
 
-message ListNode { string name = 1; }
+message ListNode {
+  uint32 object_serial = 2;
+  uint32 factory_id = 3;
+  uint32 client_id = 4;
+  string client_api = 5;
+  string application_name = 6;
+  string name = 1;
+  string media_class = 7;
+}
 
 message ListNodesReply { repeated ListNode nodes = 1; }

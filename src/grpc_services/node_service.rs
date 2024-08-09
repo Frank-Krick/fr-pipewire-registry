@@ -46,7 +46,15 @@ impl Node for NodeService {
         let reply = ListNodesReply {
             nodes: service_reply
                 .into_iter()
-                .map(|n| ListNode { name: n.node_name })
+                .map(|n| ListNode {
+                    object_serial: n.object_serial as u32,
+                    factory_id: n.factory_id as u32,
+                    client_id: n.client_id as u32,
+                    client_api: n.client_api,
+                    application_name: n.application_name,
+                    name: n.node_name,
+                    media_class: n.media_class,
+                })
                 .collect(),
         };
 
