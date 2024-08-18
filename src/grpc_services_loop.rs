@@ -1,3 +1,4 @@
+use fr_logging::Logger;
 use tonic::transport::Server;
 
 use crate::grpc_services::application_service::ApplicationService;
@@ -5,7 +6,6 @@ use crate::grpc_services::device_service::DeviceService;
 use crate::grpc_services::node_service::NodeService;
 use crate::grpc_services::port_service::PortService;
 
-use crate::logging::Logger;
 use crate::pipewire_registry::{
     GetApplicationsListRequest, GetDevicesListRequest, GetNodesListRequest, GetPortsListRequest,
 };

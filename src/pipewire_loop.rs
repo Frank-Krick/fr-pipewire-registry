@@ -3,6 +3,8 @@ use std::rc::Rc;
 
 use anyhow::Result;
 
+use fr_logging::Logger;
+
 use pipewire::context::Context;
 use pipewire::main_loop::MainLoop;
 use pipewire::registry::Registry;
@@ -11,7 +13,6 @@ use pipewire::types::ObjectType;
 use tokio::sync::mpsc::UnboundedSender as Sender;
 
 use crate::config::MixerConfig;
-use crate::logging::Logger;
 use crate::pipewire_event_consumer::PipewireApplicationUpdate;
 use crate::pipewire_event_consumer::PipewireDeviceUpdate;
 use crate::pipewire_event_consumer::PipewireEventConsumer;

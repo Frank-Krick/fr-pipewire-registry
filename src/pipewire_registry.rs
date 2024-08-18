@@ -3,7 +3,8 @@ use std::collections::BTreeMap;
 use tokio::select;
 use tokio::sync::mpsc::UnboundedReceiver;
 
-use crate::logging::Logger;
+use fr_logging::Logger;
+
 use crate::pipewire_event_consumer::{
     PipewireApplicationUpdate, PipewireDeviceUpdate, PipewireNodeUpdate, PipewirePortUpdate,
 };

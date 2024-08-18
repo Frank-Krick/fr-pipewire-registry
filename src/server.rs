@@ -6,17 +6,16 @@ use rlg::log::Log;
 mod config;
 mod grpc_services;
 mod grpc_services_loop;
-mod logging;
 mod pipewire_event_consumer;
 mod pipewire_factory;
 mod pipewire_loop;
 mod pipewire_registry;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    logging::setup_logging();
+    fr_logging::setup_logging();
     let (logger_send, logger_receive) = tokio::sync::mpsc::unbounded_channel::<Log>();
-    let logger_factory = logging::LoggerFactory::new(logger_send);
-    let _logger_thread = thread::spawn(move || logging::run_logging_loop(logger_receive));
+    let logger_factory = fr_logging::LoggerFactory::new(logger_send);
+    let _logger_thread = thread::spawn(move || fr_logging::run_logging_loop(logger_receive));
 
     let main_logger = logger_factory.new_logger(String::from("main_loop"));
 

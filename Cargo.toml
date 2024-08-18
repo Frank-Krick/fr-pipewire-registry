@@ -14,7 +14,13 @@ path = "src/client.rs"
 [dependencies]
 tonic = "0.12.1"
 prost = "0.13"
-tokio = { version = "1.0", features = ["full", "macros", "rt-multi-thread", "signal", "sync"] }
+tokio = { version = "1.0", features = [
+  "full",
+  "macros",
+  "rt-multi-thread",
+  "signal",
+  "sync",
+] }
 pipewire = "0.8.0"
 anyhow = "1.0.86"
 toml = "0.8.19"
@@ -28,6 +34,8 @@ chrono = "0.4.38"
 features = "0.10.0"
 futures = "0.3.30"
 clap = { version = "4.5.13", features = ["derive"] }
+fr-pmx-config-lib = { path = "../fr-pmx-config-lib" }
+fr-logging = { path = "../fr-logging" }
 
 [build-dependencies]
 tonic-build = "0.12"
