@@ -3,7 +3,6 @@ use std::thread;
 
 use rlg::log::Log;
 
-mod config;
 mod grpc_services;
 mod grpc_services_loop;
 mod pipewire_event_consumer;
@@ -19,10 +18,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let main_logger = logger_factory.new_logger(String::from("main_loop"));
 
-    main_logger.log_info("Reading congiuration");
-
-    let mixer_config = config::read_mixer_configuration_file();
-
     let (get_node_list_request_sender, get_node_list_request_receiver) =
         tokio::sync::mpsc::unbounded_channel();
     let (get_port_list_request_sender, get_port_list_request_receiver) =
@@ -32,6 +27,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (get_device_list_request_sender, get_device_list_request_receiver) =
         tokio::sync::mpsc::unbounded_channel();
     let grpc_logger = logger_factory.new_logger(String::from("gRPC Service"));
+
+    main_logger.log_info("Starting grpc services");
     let _grpc_services_thread = thread::spawn(move || {
         grpc_services_loop::run_grpc_service(
             &grpc_logger,
@@ -71,7 +68,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let pipewire_logger = logger_factory.new_logger(String::from("pipewire_loop"));
     let (factory_sender, factories_receiver) = tokio::sync::oneshot::channel();
     pipewire_loop::run_pipewire_loop(
-        &mixer_config,
         &pipewire_logger,
         device_update_sender,
         port_update_sender,

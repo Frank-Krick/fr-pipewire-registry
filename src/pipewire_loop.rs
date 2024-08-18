@@ -12,7 +12,6 @@ use pipewire::types::ObjectType;
 
 use tokio::sync::mpsc::UnboundedSender as Sender;
 
-use crate::config::MixerConfig;
 use crate::pipewire_event_consumer::PipewireApplicationUpdate;
 use crate::pipewire_event_consumer::PipewireDeviceUpdate;
 use crate::pipewire_event_consumer::PipewireEventConsumer;
@@ -20,7 +19,6 @@ use crate::pipewire_event_consumer::PipewireNodeUpdate;
 use crate::pipewire_event_consumer::PipewirePortUpdate;
 
 pub fn run_pipewire_loop(
-    _mixer_config: &MixerConfig,
     logger: &Logger,
     pipewire_device_sender: Sender<PipewireDeviceUpdate>,
     pipewire_port_sender: Sender<PipewirePortUpdate>,
