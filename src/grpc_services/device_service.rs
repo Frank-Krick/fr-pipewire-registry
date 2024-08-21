@@ -2,7 +2,7 @@ use fr_pipewire_registry::device_server::{Device, DeviceServer};
 use fr_pipewire_registry::{ListDevice, ListDevicesReply, ListDevicesRequest};
 use tonic::{Request, Response, Status};
 
-use crate::pipewire_registry::GetDevicesListRequest;
+use crate::pipewire_registry::{GetDevicesListRequest, PipewireRegistryRequests};
 
 mod fr_pipewire_registry {
     tonic::include_proto!("fr_pipewire_registry.device");
@@ -10,7 +10,7 @@ mod fr_pipewire_registry {
 
 #[derive(Debug)]
 pub struct DeviceService {
-    get_devices_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetDevicesListRequest>,
+    request_sender: tokio::sync::mpsc::UnboundedSender<PipewireRegistryRequests>,
 }
 
 #[tonic::async_trait]
@@ -20,12 +20,10 @@ impl Device for DeviceService {
         _request: Request<ListDevicesRequest>,
     ) -> Result<Response<ListDevicesReply>, Status> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        let service_request = GetDevicesListRequest {
+        let service_request = PipewireRegistryRequests::GetDevicesListRequest {
             reply_sender: sender,
         };
-        self.get_devices_list_request_sender
-            .send(service_request)
-            .unwrap();
+        self.request_sender.send(service_request).unwrap();
         let service_reply = receiver.await.unwrap();
         let reply = ListDevicesReply {
             devices: service_reply
@@ -48,10 +46,12 @@ impl Device for DeviceService {
 
 impl DeviceService {
     pub fn new_server(
-        get_devices_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetDevicesListRequest>,
+        get_devices_list_request_sender: tokio::sync::mpsc::UnboundedSender<
+            PipewireRegistryRequests,
+        >,
     ) -> DeviceServer<Self> {
         DeviceServer::new(DeviceService {
-            get_devices_list_request_sender,
+            request_sender: get_devices_list_request_sender,
         })
     }
 }

@@ -2,7 +2,7 @@ use fr_pipewire_registry::application_server::{Application, ApplicationServer};
 use fr_pipewire_registry::{ListApplication, ListApplicationsReply, ListApplicationsRequest};
 use tonic::{Request, Response, Status};
 
-use crate::pipewire_registry::GetApplicationsListRequest;
+use crate::pipewire_registry::PipewireRegistryRequests;
 
 pub mod fr_pipewire_registry {
     tonic::include_proto!("fr_pipewire_registry.application");
@@ -10,24 +10,23 @@ pub mod fr_pipewire_registry {
 
 #[derive(Debug)]
 pub struct ApplicationService {
-    get_application_list_request_sender:
-        tokio::sync::mpsc::UnboundedSender<GetApplicationsListRequest>,
+    request_sender: tokio::sync::mpsc::UnboundedSender<PipewireRegistryRequests>,
 }
 
 impl ApplicationService {
     pub fn new(
         get_application_list_request_sender: tokio::sync::mpsc::UnboundedSender<
-            GetApplicationsListRequest,
+            PipewireRegistryRequests,
         >,
     ) -> Self {
         ApplicationService {
-            get_application_list_request_sender,
+            request_sender: get_application_list_request_sender,
         }
     }
 
     pub fn new_server(
         get_application_list_request_sender: tokio::sync::mpsc::UnboundedSender<
-            GetApplicationsListRequest,
+            PipewireRegistryRequests,
         >,
     ) -> ApplicationServer<Self> {
         ApplicationServer::new(ApplicationService::new(get_application_list_request_sender))
@@ -41,12 +40,10 @@ impl Application for ApplicationService {
         _request: Request<ListApplicationsRequest>,
     ) -> Result<Response<ListApplicationsReply>, Status> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        let service_request = GetApplicationsListRequest {
+        let service_request = PipewireRegistryRequests::GetApplicationsListRequest {
             reply_sender: sender,
         };
-        self.get_application_list_request_sender
-            .send(service_request)
-            .unwrap();
+        self.request_sender.send(service_request).unwrap();
         let service_reply = receiver.await.unwrap();
         let reply = ListApplicationsReply {
             applications: service_reply

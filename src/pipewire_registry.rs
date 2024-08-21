@@ -20,6 +20,21 @@ use crate::pipewire_registry::registry_node::Node;
 use crate::pipewire_registry::registry_port::Port;
 pub use crate::pipewire_registry::registry_port::PortDirection;
 
+pub enum PipewireRegistryRequests {
+    GetDevicesListRequest {
+        reply_sender: tokio::sync::oneshot::Sender<Vec<Device>>,
+    },
+    GetNodesListRequest {
+        reply_sender: tokio::sync::oneshot::Sender<Vec<Node>>,
+    },
+    GetPortsListRequest {
+        reply_sender: tokio::sync::oneshot::Sender<Vec<Port>>,
+    },
+    GetApplicationsListRequest {
+        reply_sender: tokio::sync::oneshot::Sender<Vec<Application>>,
+    },
+}
+
 pub struct GetDevicesListRequest {
     pub reply_sender: tokio::sync::oneshot::Sender<Vec<Device>>,
 }
@@ -37,14 +52,11 @@ pub struct GetApplicationsListRequest {
 }
 
 pub struct PipewireRegistry {
+    pipewire_registry_request_receiver: UnboundedReceiver<PipewireRegistryRequests>,
     device_update_receiver: UnboundedReceiver<PipewireDeviceUpdate>,
     port_update_receiver: UnboundedReceiver<PipewirePortUpdate>,
     node_update_receiver: UnboundedReceiver<PipewireNodeUpdate>,
     application_update_receiver: UnboundedReceiver<PipewireApplicationUpdate>,
-    node_list_request_receiver: UnboundedReceiver<GetNodesListRequest>,
-    port_list_request_receiver: UnboundedReceiver<GetPortsListRequest>,
-    application_list_request_receiver: UnboundedReceiver<GetApplicationsListRequest>,
-    device_list_request_receiver: UnboundedReceiver<GetDevicesListRequest>,
     ports: BTreeMap<(PortDirection, u16, u16), Port>,
     nodes: Vec<Node>,
     applications: Vec<Application>,
@@ -53,24 +65,18 @@ pub struct PipewireRegistry {
 
 impl PipewireRegistry {
     pub fn new(
+        pipewire_registry_request_receiver: UnboundedReceiver<PipewireRegistryRequests>,
         device_update_receiver: UnboundedReceiver<PipewireDeviceUpdate>,
         port_update_receiver: UnboundedReceiver<PipewirePortUpdate>,
         node_update_receiver: UnboundedReceiver<PipewireNodeUpdate>,
         application_update_receiver: UnboundedReceiver<PipewireApplicationUpdate>,
-        node_list_request_receiver: UnboundedReceiver<GetNodesListRequest>,
-        port_list_request_receiver: UnboundedReceiver<GetPortsListRequest>,
-        application_list_request_receiver: UnboundedReceiver<GetApplicationsListRequest>,
-        device_list_request_receiver: UnboundedReceiver<GetDevicesListRequest>,
     ) -> Self {
         PipewireRegistry {
+            pipewire_registry_request_receiver,
             device_update_receiver,
             port_update_receiver,
             node_update_receiver,
             application_update_receiver,
-            node_list_request_receiver,
-            port_list_request_receiver,
-            application_list_request_receiver,
-            device_list_request_receiver,
             ports: BTreeMap::new(),
             nodes: Vec::new(),
             applications: Vec::new(),
@@ -116,26 +122,29 @@ impl PipewireRegistry {
 
                     }
                 }
-                node_list_request = self.node_list_request_receiver.recv() => {
-                    logger.log_info("Received node list request");
-                    node_list_request.unwrap().reply_sender.send(self.nodes.clone()).unwrap();
-                }
-                port_list_request = self.port_list_request_receiver.recv() => {
-                    logger.log_info("Received port list request");
-                    port_list_request.unwrap().reply_sender.send(
-                        self.ports.values().cloned().collect()).unwrap();
-                }
-                application_list_request = self.application_list_request_receiver.recv() => {
-                    logger.log_info("Received application list request");
-                    application_list_request.unwrap().reply_sender.send(
-                        self.applications.clone()
-                    ).unwrap();
-                }
-                device_list_request = self.device_list_request_receiver.recv() => {
-                    logger.log_info("Received device list request");
-                    device_list_request.unwrap().reply_sender.send(self.devices.clone()).unwrap();
+                pipewire_registry_request = self.pipewire_registry_request_receiver.recv() => {
+                    self.process_pipewire_request(pipewire_registry_request.unwrap());
                 }
             };
+        }
+    }
+
+    async fn process_pipewire_request(&mut self, request: PipewireRegistryRequests) {
+        match request {
+            PipewireRegistryRequests::GetDevicesListRequest { reply_sender } => {
+                reply_sender.send(self.devices.clone()).unwrap();
+            }
+            PipewireRegistryRequests::GetNodesListRequest { reply_sender } => {
+                reply_sender.send(self.nodes.clone()).unwrap();
+            }
+            PipewireRegistryRequests::GetPortsListRequest { reply_sender } => {
+                reply_sender
+                    .send(self.ports.values().cloned().collect())
+                    .unwrap();
+            }
+            PipewireRegistryRequests::GetApplicationsListRequest { reply_sender } => {
+                reply_sender.send(self.applications.clone()).unwrap();
+            }
         }
     }
 }

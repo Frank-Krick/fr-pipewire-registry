@@ -2,27 +2,27 @@ use fr_pipewire_registry::port_server::{Port, PortServer};
 use fr_pipewire_registry::{ListPort, ListPortsReply, ListPortsRequest, PortDirection};
 use tonic::{Request, Response, Status};
 
-use crate::pipewire_registry::GetPortsListRequest;
+use crate::pipewire_registry::{GetPortsListRequest, PipewireRegistryRequests};
 
 pub mod fr_pipewire_registry {
     tonic::include_proto!("fr_pipewire_registry.ports");
 }
 
 pub struct PortService {
-    get_ports_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetPortsListRequest>,
+    request_sender: tokio::sync::mpsc::UnboundedSender<PipewireRegistryRequests>,
 }
 
 impl PortService {
     pub fn new(
-        get_ports_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetPortsListRequest>,
+        get_ports_list_request_sender: tokio::sync::mpsc::UnboundedSender<PipewireRegistryRequests>,
     ) -> Self {
         PortService {
-            get_ports_list_request_sender,
+            request_sender: get_ports_list_request_sender,
         }
     }
 
     pub fn new_server(
-        get_ports_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetPortsListRequest>,
+        get_ports_list_request_sender: tokio::sync::mpsc::UnboundedSender<PipewireRegistryRequests>,
     ) -> PortServer<PortService> {
         PortServer::new(Self::new(get_ports_list_request_sender))
     }
@@ -35,8 +35,8 @@ impl Port for PortService {
         _request: Request<ListPortsRequest>,
     ) -> std::result::Result<Response<ListPortsReply>, Status> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        self.get_ports_list_request_sender
-            .send(GetPortsListRequest {
+        self.request_sender
+            .send(PipewireRegistryRequests::GetPortsListRequest {
                 reply_sender: sender,
             })
             .unwrap();

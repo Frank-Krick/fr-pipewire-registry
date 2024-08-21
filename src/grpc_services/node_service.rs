@@ -2,7 +2,7 @@ use fr_pipewire_registry::node_server::{Node, NodeServer};
 use fr_pipewire_registry::{ListNode, ListNodesReply, ListNodesRequest};
 use tonic::{Request, Response, Status};
 
-use crate::pipewire_registry::GetNodesListRequest;
+use crate::pipewire_registry::PipewireRegistryRequests;
 
 pub mod fr_pipewire_registry {
     tonic::include_proto!("fr_pipewire_registry.nodes");
@@ -10,20 +10,20 @@ pub mod fr_pipewire_registry {
 
 #[derive(Debug)]
 pub struct NodeService {
-    get_nodes_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetNodesListRequest>,
+    request_sender: tokio::sync::mpsc::UnboundedSender<PipewireRegistryRequests>,
 }
 
 impl NodeService {
     pub fn new(
-        get_nodes_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetNodesListRequest>,
+        get_nodes_list_request_sender: tokio::sync::mpsc::UnboundedSender<PipewireRegistryRequests>,
     ) -> Self {
         NodeService {
-            get_nodes_list_request_sender,
+            request_sender: get_nodes_list_request_sender,
         }
     }
 
     pub fn new_server(
-        get_nodes_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetNodesListRequest>,
+        get_nodes_list_request_sender: tokio::sync::mpsc::UnboundedSender<PipewireRegistryRequests>,
     ) -> NodeServer<NodeService> {
         NodeServer::new(Self::new(get_nodes_list_request_sender))
     }
@@ -36,12 +36,10 @@ impl Node for NodeService {
         _request: Request<ListNodesRequest>,
     ) -> Result<Response<ListNodesReply>, Status> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        let service_request = GetNodesListRequest {
+        let service_request = PipewireRegistryRequests::GetNodesListRequest {
             reply_sender: sender,
         };
-        self.get_nodes_list_request_sender
-            .send(service_request)
-            .unwrap();
+        self.request_sender.send(service_request).unwrap();
         let service_reply = receiver.await.unwrap();
         let reply = ListNodesReply {
             nodes: service_reply

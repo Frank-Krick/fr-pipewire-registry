@@ -28,15 +28,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         tokio::sync::mpsc::unbounded_channel();
     let grpc_logger = logger_factory.new_logger(String::from("gRPC Service"));
 
+    let (pipewire_registry_request_sender, pipewire_registry_request_receiver) =
+        tokio::sync::mpsc::unbounded_channel();
+
     main_logger.log_info("Starting grpc services");
     let _grpc_services_thread = thread::spawn(move || {
-        grpc_services_loop::run_grpc_service(
-            &grpc_logger,
-            get_node_list_request_sender,
-            get_port_list_request_sender,
-            get_application_list_request_sender,
-            get_device_list_request_sender,
-        )
+        grpc_services_loop::run_grpc_service(&grpc_logger, pipewire_registry_request_sender)
     });
 
     let (device_update_sender, device_update_receiver) = tokio::sync::mpsc::unbounded_channel();
@@ -45,6 +42,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (application_update_sender, application_update_receiver) =
         tokio::sync::mpsc::unbounded_channel();
     let pipewire_registry_logger = logger_factory.new_logger(String::from("pipewire_registry"));
+
     let _pipewire_registry_thread = thread::spawn(move || {
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -52,14 +50,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             .unwrap()
             .block_on(async move {
                 let mut pipewire_registry = pipewire_registry::PipewireRegistry::new(
+                    pipewire_registry_request_receiver,
                     device_update_receiver,
                     port_update_receiver,
                     node_update_receiver,
                     application_update_receiver,
-                    get_node_list_request_receiver,
-                    get_port_list_request_receiver,
-                    get_application_list_request_receiver,
-                    get_device_list_request_receiver,
                 );
                 pipewire_registry.run(&pipewire_registry_logger).await;
             });

@@ -8,16 +8,12 @@ use crate::grpc_services::port_service::PortService;
 
 use crate::pipewire_registry::{
     GetApplicationsListRequest, GetDevicesListRequest, GetNodesListRequest, GetPortsListRequest,
+    PipewireRegistryRequests,
 };
 
 pub fn run_grpc_service(
     logger: &Logger,
-    get_nodes_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetNodesListRequest>,
-    get_ports_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetPortsListRequest>,
-    get_applications_list_request_sender: tokio::sync::mpsc::UnboundedSender<
-        GetApplicationsListRequest,
-    >,
-    get_devices_list_request_sender: tokio::sync::mpsc::UnboundedSender<GetDevicesListRequest>,
+    request_sender: tokio::sync::mpsc::UnboundedSender<PipewireRegistryRequests>,
 ) {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -33,12 +29,10 @@ pub fn run_grpc_service(
             };
 
             Server::builder()
-                .add_service(NodeService::new_server(get_nodes_list_request_sender))
-                .add_service(PortService::new_server(get_ports_list_request_sender))
-                .add_service(ApplicationService::new_server(
-                    get_applications_list_request_sender,
-                ))
-                .add_service(DeviceService::new_server(get_devices_list_request_sender))
+                .add_service(NodeService::new_server(request_sender.clone()))
+                .add_service(PortService::new_server(request_sender.clone()))
+                .add_service(ApplicationService::new_server(request_sender.clone()))
+                .add_service(DeviceService::new_server(request_sender))
                 .serve(addr)
                 .await
                 .unwrap();

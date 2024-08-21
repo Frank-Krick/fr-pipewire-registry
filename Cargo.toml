@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "fr-pipewire-registry-server"
+name = "fr-pipewire-registry"
 path = "src/server.rs"
 
 [[bin]]
-name = "fr-pwreg-cli"
+name = "fr-pipewire-registry-cli"
 path = "src/client.rs"
 
 [dependencies]
