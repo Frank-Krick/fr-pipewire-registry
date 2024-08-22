@@ -1,0 +1,12 @@
+syntax = "proto3";
+package pmx.pipewire.link;
+
+message Link {
+  uint32 object_serial = 1;
+  uint32 factory_id = 2;
+  uint32 client_id = 3;
+  uint32 output_port_id = 4;
+  uint32 input_port_id = 5;
+  uint32 output_node_id = 6;
+  uint32 input_node_id = 7;
+}

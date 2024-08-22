@@ -1,11 +1,5 @@
 syntax = "proto3";
-package fr_pipewire_registry.nodes;
-
-service Node {
-  rpc ListNodes(ListNodesRequest) returns (ListNodesReply);
-}
-
-message ListNodesRequest {}
+package pmx.pipewire.node;
 
 message ListNode {
   uint32 object_serial = 2;
@@ -16,5 +10,3 @@ message ListNode {
   string name = 1;
   string media_class = 7;
 }
-
-message ListNodesReply { repeated ListNode nodes = 1; }

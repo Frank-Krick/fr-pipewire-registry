@@ -1,15 +1,9 @@
 use fr_logging::Logger;
 use tonic::transport::Server;
 
-use crate::grpc_services::application_service::ApplicationService;
-use crate::grpc_services::device_service::DeviceService;
-use crate::grpc_services::node_service::NodeService;
-use crate::grpc_services::port_service::PortService;
+use crate::grpc_services::PipewireService;
 
-use crate::pipewire_registry::{
-    GetApplicationsListRequest, GetDevicesListRequest, GetNodesListRequest, GetPortsListRequest,
-    PipewireRegistryRequests,
-};
+use crate::pipewire_registry::PipewireRegistryRequests;
 
 pub fn run_grpc_service(
     logger: &Logger,
@@ -29,10 +23,7 @@ pub fn run_grpc_service(
             };
 
             Server::builder()
-                .add_service(NodeService::new_server(request_sender.clone()))
-                .add_service(PortService::new_server(request_sender.clone()))
-                .add_service(ApplicationService::new_server(request_sender.clone()))
-                .add_service(DeviceService::new_server(request_sender))
+                .add_service(PipewireService::new_server(request_sender))
                 .serve(addr)
                 .await
                 .unwrap();

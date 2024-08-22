@@ -3,86 +3,91 @@ use pipewire::registry::GlobalObject;
 
 use tokio::sync::mpsc::UnboundedSender as Sender;
 
-#[derive(Debug)]
-#[allow(dead_code)]
-pub struct PipewireDeviceUpdate {
-    pub name: String,
-    pub factory_id: String,
-    pub client_id: String,
-    pub description: String,
-    pub nick: String,
-    pub media_class: String,
-    pub object_serial: String,
-}
-
-#[derive(Debug)]
-#[allow(dead_code)]
-pub struct PipewirePortUpdate {
-    pub id: String,
-    pub name: String,
-    pub direction: String,
-    pub physical: String,
-    pub alias: String,
-    pub group: String,
-    pub path: String,
-    pub dsp_format: String,
-    pub node_id: String,
-    pub audio_channel: String,
-}
-
-#[derive(Debug)]
-#[allow(dead_code)]
-pub struct PipewireNodeUpdate {
-    pub object_serial: String,
-    pub factory_id: String,
-    pub client_id: String,
-    pub client_api: String,
-    pub application_name: String,
-    pub node_name: String,
-    pub media_class: String,
-}
-
-#[derive(Debug)]
-#[allow(dead_code)]
-pub struct PipewireApplicationUpdate {
-    pub object_serial: String,
-    pub module_id: String,
-    pub pipewire_protocol: String,
-    pub pipewire_sec_pid: String,
-    pub pipewire_sec_uid: String,
-    pub pipewire_sec_gid: String,
-    pub pipewire_sec_socket: String,
-    pub pipewire_access: String,
-    pub name: String,
+pub enum PipewireUpdateEvent {
+    Device {
+        name: String,
+        factory_id: String,
+        client_id: String,
+        description: String,
+        nick: String,
+        media_class: String,
+        object_serial: String,
+    },
+    Port {
+        id: String,
+        name: String,
+        direction: String,
+        physical: String,
+        alias: String,
+        group: String,
+        path: String,
+        dsp_format: String,
+        node_id: String,
+        audio_channel: String,
+        object_serial: String,
+    },
+    Node {
+        object_serial: String,
+        factory_id: String,
+        client_id: String,
+        client_api: String,
+        application_name: String,
+        node_name: String,
+        media_class: String,
+    },
+    Application {
+        object_serial: String,
+        module_id: String,
+        pipewire_protocol: String,
+        pipewire_sec_pid: String,
+        pipewire_sec_uid: String,
+        pipewire_sec_gid: String,
+        pipewire_sec_socket: String,
+        pipewire_access: String,
+        name: String,
+    },
+    Link {
+        object_serial: String,
+        factory_id: String,
+        client_id: String,
+        output_port_id: String,
+        input_port_id: String,
+        output_node_id: String,
+        input_node_id: String,
+    },
 }
 
 pub struct PipewireEventConsumer {
-    device_update_sender: Sender<PipewireDeviceUpdate>,
-    port_update_sender: Sender<PipewirePortUpdate>,
-    node_update_sender: Sender<PipewireNodeUpdate>,
-    application_update_sender: Sender<PipewireApplicationUpdate>,
+    pipewire_update_event_sender: Sender<PipewireUpdateEvent>,
 }
 
 impl PipewireEventConsumer {
-    pub fn new(
-        device_update_sender: Sender<PipewireDeviceUpdate>,
-        port_update_sender: Sender<PipewirePortUpdate>,
-        node_update_sender: Sender<PipewireNodeUpdate>,
-        application_update_sender: Sender<PipewireApplicationUpdate>,
-    ) -> PipewireEventConsumer {
+    pub fn new(pipewire_update_event_sender: Sender<PipewireUpdateEvent>) -> PipewireEventConsumer {
         PipewireEventConsumer {
-            device_update_sender,
-            port_update_sender,
-            node_update_sender,
-            application_update_sender,
+            pipewire_update_event_sender,
         }
     }
 
     pub fn process_pipewire_update(&self, update: &GlobalObject<&DictRef>) {
         if let Some(props) = update.props {
+            if props.keys().any(|p| p == "link.output.port") {
+                self.pipewire_update_event_sender
+                    .send(PipewireUpdateEvent::Link {
+                        object_serial: String::from(props.get("object.serial").unwrap()),
+                        factory_id: String::from(props.get("factory.id").unwrap()),
+                        client_id: String::from(props.get("client.id").unwrap_or("")),
+                        output_port_id: String::from(props.get("link.output.port").unwrap()),
+                        input_port_id: String::from(props.get("link.input.port").unwrap()),
+                        output_node_id: String::from(props.get("link.output.node").unwrap()),
+                        input_node_id: String::from(props.get("link.input.node").unwrap()),
+                    })
+                    .unwrap();
+                return;
+            }
+
             if let Some(device_name) = props.get("device.name") {
-                self.device_update_sender
-                    .send(PipewireDeviceUpdate {
+                self.pipewire_update_event_sender
+                    .send(PipewireUpdateEvent::Device {
                         name: String::from(device_name),
                         factory_id: String::from(props.get("factory.id").unwrap()),
                         client_id: String::from(props.get("client.id").unwrap()),
@@ -96,49 +101,54 @@ impl PipewireEventConsumer {
             };
 
             if let Some(_value) = props.get("port.name") {
-                let port = PipewirePortUpdate {
-                    id: String::from(props.get("port.id").unwrap()),
-                    name: String::from(props.get("port.name").unwrap()),
-                    direction: String::from(props.get("port.direction").unwrap()),
-                    physical: String::from(props.get("port.physical").unwrap_or("")),
-                    alias: String::from(props.get("port.alias").unwrap()),
-                    group: String::from(props.get("port.group").unwrap_or("")),
-                    path: String::from(props.get("object.path").unwrap()),
-                    dsp_format: String::from(props.get("format.dsp").unwrap()),
-                    node_id: String::from(props.get("node.id").unwrap()),
-                    audio_channel: String::from(props.get("audio.channel").unwrap_or("")),
-                };
-                self.port_update_sender.send(port).unwrap();
+                self.pipewire_update_event_sender
+                    .send(PipewireUpdateEvent::Port {
+                        object_serial: String::from(props.get("object.serial").unwrap()),
+                        id: String::from(props.get("port.id").unwrap()),
+                        name: String::from(props.get("port.name").unwrap()),
+                        direction: String::from(props.get("port.direction").unwrap()),
+                        physical: String::from(props.get("port.physical").unwrap_or("")),
+                        alias: String::from(props.get("port.alias").unwrap()),
+                        group: String::from(props.get("port.group").unwrap_or("")),
+                        path: String::from(props.get("object.path").unwrap()),
+                        dsp_format: String::from(props.get("format.dsp").unwrap()),
+                        node_id: String::from(props.get("node.id").unwrap()),
+                        audio_channel: String::from(props.get("audio.channel").unwrap_or("")),
+                    })
+                    .unwrap();
                 return;
             };
 
             if let Some(_value) = props.get("node.name") {
-                let node = PipewireNodeUpdate {
-                    object_serial: String::from(props.get("object.serial").unwrap()),
-                    factory_id: String::from(props.get("factory.id").unwrap_or("")),
-                    client_id: String::from(props.get("client.id").unwrap_or("")),
-                    client_api: String::from(props.get("client.api").unwrap_or("")),
-                    application_name: String::from(props.get("application.name").unwrap_or("")),
-                    node_name: String::from(props.get("node.name").unwrap_or("")),
-                    media_class: String::from(props.get(" media.class").unwrap_or("")),
-                };
-                self.node_update_sender.send(node).unwrap();
+                self.pipewire_update_event_sender
+                    .send(PipewireUpdateEvent::Node {
+                        object_serial: String::from(props.get("object.serial").unwrap()),
+                        factory_id: String::from(props.get("factory.id").unwrap_or("")),
+                        client_id: String::from(props.get("client.id").unwrap_or("")),
+                        client_api: String::from(props.get("client.api").unwrap_or("")),
+                        application_name: String::from(props.get("application.name").unwrap_or("")),
+                        node_name: String::from(props.get("node.name").unwrap_or("")),
+                        media_class: String::from(props.get(" media.class").unwrap_or("")),
+                    })
+                    .unwrap();
                 return;
             }
 
             if let Some(_value) = props.get("application.name") {
-                let application = PipewireApplicationUpdate {
+                let application = PipewireUpdateEvent::Application {
                     object_serial: String::from(props.get("object.serial").unwrap()),
-                    module_id: String::from(props.get("module.id").unwrap()),
-                    pipewire_protocol: String::from(props.get("pipewire.protocol").unwrap()),
-                    pipewire_sec_pid: String::from(props.get("pipewire.sec.pid").unwrap()),
-                    pipewire_sec_uid: String::from(props.get("pipewire.sec.uid").unwrap()),
-                    pipewire_sec_gid: String::from(props.get("pipewire.sec.gid").unwrap()),
-                    pipewire_sec_socket: String::from(props.get("pipewire.sec.socket").unwrap()),
-                    pipewire_access: String::from(props.get("pipewire.access").unwrap()),
-                    name: String::from(props.get("application.name").unwrap()),
+                    module_id: String::from(props.get("module.id").unwrap_or("")),
+                    pipewire_protocol: String::from(props.get("pipewire.protocol").unwrap_or("")),
+                    pipewire_sec_pid: String::from(props.get("pipewire.sec.pid").unwrap_or("")),
+                    pipewire_sec_uid: String::from(props.get("pipewire.sec.uid").unwrap_or("")),
+                    pipewire_sec_gid: String::from(props.get("pipewire.sec.gid").unwrap_or("")),
+                    pipewire_sec_socket: String::from(
+                        props.get("pipewire.sec.socket").unwrap_or(""),
+                    ),
+                    pipewire_access: String::from(props.get("pipewire.access").unwrap_or("")),
+                    name: String::from(props.get("application.name").unwrap_or("")),
                 };
-                self.application_update_sender.send(application).unwrap();
+                self.pipewire_update_event_sender.send(application).unwrap();
                 return;
             }
 

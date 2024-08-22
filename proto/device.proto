@@ -1,11 +1,5 @@
 syntax = "proto3";
-package fr_pipewire_registry.device;
-
-service Device {
-  rpc ListDevices(ListDevicesRequest) returns (ListDevicesReply);
-}
-
-message ListDevicesRequest {}
+package pmx.pipewire.device;
 
 message ListDevice {
   uint32 factory_id = 1;
@@ -16,5 +10,3 @@ message ListDevice {
   string nick = 6;
   string media_class = 7;
 }
-
-message ListDevicesReply { repeated ListDevice devices = 1; }

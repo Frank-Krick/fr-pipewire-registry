@@ -1,11 +1,5 @@
 syntax = "proto3";
-package fr_pipewire_registry.application;
-
-service Application {
-  rpc ListApplications(ListApplicationsRequest) returns (ListApplicationsReply);
-}
-
-message ListApplicationsRequest {}
+package pmx.pipewire.application;
 
 message ListApplication {
   uint32 object_serial = 1;
@@ -18,6 +12,3 @@ message ListApplication {
   string pipewire_access = 8;
   string name = 9;
 }
-
-message ListApplicationsReply { repeated ListApplication applications = 1; }
-

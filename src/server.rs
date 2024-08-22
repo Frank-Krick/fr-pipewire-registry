@@ -18,14 +18,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let main_logger = logger_factory.new_logger(String::from("main_loop"));
 
-    let (get_node_list_request_sender, get_node_list_request_receiver) =
-        tokio::sync::mpsc::unbounded_channel();
-    let (get_port_list_request_sender, get_port_list_request_receiver) =
-        tokio::sync::mpsc::unbounded_channel();
-    let (get_application_list_request_sender, get_application_list_request_receiver) =
-        tokio::sync::mpsc::unbounded_channel();
-    let (get_device_list_request_sender, get_device_list_request_receiver) =
-        tokio::sync::mpsc::unbounded_channel();
     let grpc_logger = logger_factory.new_logger(String::from("gRPC Service"));
 
     let (pipewire_registry_request_sender, pipewire_registry_request_receiver) =
@@ -36,12 +28,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         grpc_services_loop::run_grpc_service(&grpc_logger, pipewire_registry_request_sender)
     });
 
-    let (device_update_sender, device_update_receiver) = tokio::sync::mpsc::unbounded_channel();
-    let (port_update_sender, port_update_receiver) = tokio::sync::mpsc::unbounded_channel();
-    let (node_update_sender, node_update_receiver) = tokio::sync::mpsc::unbounded_channel();
-    let (application_update_sender, application_update_receiver) =
-        tokio::sync::mpsc::unbounded_channel();
-    let pipewire_registry_logger = logger_factory.new_logger(String::from("pipewire_registry"));
+    let (pipewire_event_sender, pipewire_event_receiver) = tokio::sync::mpsc::unbounded_channel();
 
     let _pipewire_registry_thread = thread::spawn(move || {
         tokio::runtime::Builder::new_current_thread()
@@ -50,27 +37,18 @@ fn main() -> Result<(), Box<dyn Error>> {
             .unwrap()
             .block_on(async move {
                 let mut pipewire_registry = pipewire_registry::PipewireRegistry::new(
+                    pipewire_event_receiver,
                     pipewire_registry_request_receiver,
-                    device_update_receiver,
-                    port_update_receiver,
-                    node_update_receiver,
-                    application_update_receiver,
                 );
-                pipewire_registry.run(&pipewire_registry_logger).await;
+                pipewire_registry.run().await;
             });
     });
 
     let pipewire_logger = logger_factory.new_logger(String::from("pipewire_loop"));
     let (factory_sender, factories_receiver) = tokio::sync::oneshot::channel();
-    pipewire_loop::run_pipewire_loop(
-        &pipewire_logger,
-        device_update_sender,
-        port_update_sender,
-        node_update_sender,
-        application_update_sender,
-        factory_sender,
-    )
-    .unwrap();
+
+    pipewire_loop::run_pipewire_loop(&pipewire_logger, pipewire_event_sender, factory_sender)
+        .unwrap();
 
     let _pipewire_factory_thread = thread::spawn(move || {
         tokio::runtime::Builder::new_current_thread()

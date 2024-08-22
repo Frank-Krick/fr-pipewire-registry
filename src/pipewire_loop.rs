@@ -12,18 +12,12 @@ use pipewire::types::ObjectType;
 
 use tokio::sync::mpsc::UnboundedSender as Sender;
 
-use crate::pipewire_event_consumer::PipewireApplicationUpdate;
-use crate::pipewire_event_consumer::PipewireDeviceUpdate;
 use crate::pipewire_event_consumer::PipewireEventConsumer;
-use crate::pipewire_event_consumer::PipewireNodeUpdate;
-use crate::pipewire_event_consumer::PipewirePortUpdate;
+use crate::pipewire_event_consumer::PipewireUpdateEvent;
 
 pub fn run_pipewire_loop(
     logger: &Logger,
-    pipewire_device_sender: Sender<PipewireDeviceUpdate>,
-    pipewire_port_sender: Sender<PipewirePortUpdate>,
-    pipewire_node_sender: Sender<PipewireNodeUpdate>,
-    pipewire_application_sender: Sender<PipewireApplicationUpdate>,
+    pipewire_update_event_sender: Sender<PipewireUpdateEvent>,
     factory_names_one_shot_sender: tokio::sync::oneshot::Sender<Factories>,
 ) -> Result<()> {
     logger.log_info("Starting Pipewire Loop");
@@ -33,12 +27,7 @@ pub fn run_pipewire_loop(
     let core = context.connect(None)?;
     let registry = core.get_registry()?;
 
-    let consumer = PipewireEventConsumer::new(
-        pipewire_device_sender,
-        pipewire_port_sender,
-        pipewire_node_sender,
-        pipewire_application_sender,
-    );
+    let consumer = PipewireEventConsumer::new(pipewire_update_event_sender);
     let listener = registry
         .add_listener_local()
         .global(move |global| consumer.process_pipewire_update(global))

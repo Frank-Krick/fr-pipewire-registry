@@ -1,0 +1,43 @@
+syntax = "proto3";
+import "proto/application.proto";
+import "proto/device.proto";
+import "proto/node.proto";
+import "proto/port.proto";
+import "proto/link.proto";
+
+package pmx.pipewire;
+
+message ListApplicationsRequest {}
+
+message ListApplicationsReply { repeated pmx.pipewire.application.ListApplication applications = 1; }
+
+message ListNodesRequest {}
+
+message ListNodesReply { repeated pmx.pipewire.node.ListNode nodes = 1; }
+
+message ListDevicesRequest {}
+
+message ListDevicesReply { repeated pmx.pipewire.device.ListDevice devices = 1; }
+
+message GetPortByObjectSerialRequest {
+  uint32 object_serial = 1;
+}
+
+message ListPortsRequest {
+  optional uint32 node_id_filter = 1;
+}
+
+message ListPortsReply { repeated pmx.pipewire.port.ListPort ports = 1; }
+
+message ListLinksRequest {}
+
+message ListLinksReply { repeated pmx.pipewire.link.Link links = 1; }
+
+service Pipewire {
+  rpc ListApplications(ListApplicationsRequest) returns (ListApplicationsReply);
+  rpc ListNodes(ListNodesRequest) returns (ListNodesReply);
+  rpc ListDevices(ListDevicesRequest) returns (ListDevicesReply);
+  rpc ListPorts(ListPortsRequest) returns (ListPortsReply);
+  rpc ListLinks(ListLinksRequest) returns (ListLinksReply);
+  rpc GetPortByObjectSerial(GetPortByObjectSerialRequest) returns (pmx.pipewire.port.ListPort);
+}
