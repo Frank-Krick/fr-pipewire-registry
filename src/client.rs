@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use pmx::pipewire::pipewire_client::PipewireClient;
+use pmx::pipewire::CreateLinkRequest;
 use pmx::pipewire::ListApplicationsRequest;
 use pmx::pipewire::ListDevicesRequest;
 use pmx::pipewire::ListLinksRequest;
@@ -25,6 +26,16 @@ enum Commands {
     ListApplications {},
     ListDevices {},
     ListLinks {},
+    CreateLink {
+        #[arg(short = 'o', long)]
+        output_port_id: u32,
+        #[arg(short = 'i', long)]
+        input_port_id: u32,
+        #[arg(short = 'n', long)]
+        output_node_id: u32,
+        #[arg(short = 'm', long)]
+        input_node_id: u32,
+    },
 }
 
 pub mod pmx {
@@ -61,6 +72,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(command) = cli_arguments.command {
         match command {
+            Commands::CreateLink {
+                output_port_id,
+                input_port_id,
+                output_node_id,
+                input_node_id,
+            } => {
+                let request = Request::new(CreateLinkRequest {
+                    output_port_id,
+                    input_port_id,
+                    output_node_id,
+                    input_node_id,
+                });
+                let response = client.create_link(request).await;
+                println!("Response={response:#?}");
+            }
             Commands::ListLinks {} => {
                 let request = Request::new(ListLinksRequest {});
                 let response = client.list_links(request).await?;

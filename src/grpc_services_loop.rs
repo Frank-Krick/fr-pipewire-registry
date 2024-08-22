@@ -3,11 +3,13 @@ use tonic::transport::Server;
 
 use crate::grpc_services::PipewireService;
 
+use crate::pipewire_factory::PipewireFactoryRequest;
 use crate::pipewire_registry::PipewireRegistryRequests;
 
 pub fn run_grpc_service(
     logger: &Logger,
     request_sender: tokio::sync::mpsc::UnboundedSender<PipewireRegistryRequests>,
+    pipewire_factory_request_sender: pipewire::channel::Sender<PipewireFactoryRequest>,
 ) {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -23,7 +25,10 @@ pub fn run_grpc_service(
             };
 
             Server::builder()
-                .add_service(PipewireService::new_server(request_sender))
+                .add_service(PipewireService::new_server(
+                    request_sender,
+                    pipewire_factory_request_sender,
+                ))
                 .serve(addr)
                 .await
                 .unwrap();

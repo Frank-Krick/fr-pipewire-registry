@@ -33,7 +33,17 @@ message ListLinksRequest {}
 
 message ListLinksReply { repeated pmx.pipewire.link.Link links = 1; }
 
+message CreateLinkRequest {
+  uint32 output_port_id = 4;
+  uint32 input_port_id = 5;
+  uint32 output_node_id = 6;
+  uint32 input_node_id = 7;
+}
+
+message CreateLinkReply {}
+
 service Pipewire {
+  rpc CreateLink(CreateLinkRequest) returns (CreateLinkReply);
   rpc ListApplications(ListApplicationsRequest) returns (ListApplicationsReply);
   rpc ListNodes(ListNodesRequest) returns (ListNodesReply);
   rpc ListDevices(ListDevicesRequest) returns (ListDevicesReply);

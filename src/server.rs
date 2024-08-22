@@ -23,9 +23,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (pipewire_registry_request_sender, pipewire_registry_request_receiver) =
         tokio::sync::mpsc::unbounded_channel();
 
+    let (pipewire_factory_request_sender, pipewire_factory_request_receiver) =
+        pipewire::channel::channel();
+
     main_logger.log_info("Starting grpc services");
     let _grpc_services_thread = thread::spawn(move || {
-        grpc_services_loop::run_grpc_service(&grpc_logger, pipewire_registry_request_sender)
+        grpc_services_loop::run_grpc_service(
+            &grpc_logger,
+            pipewire_registry_request_sender,
+            pipewire_factory_request_sender,
+        )
     });
 
     let (pipewire_event_sender, pipewire_event_receiver) = tokio::sync::mpsc::unbounded_channel();
@@ -45,22 +52,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     });
 
     let pipewire_logger = logger_factory.new_logger(String::from("pipewire_loop"));
-    let (factory_sender, factories_receiver) = tokio::sync::oneshot::channel();
 
-    pipewire_loop::run_pipewire_loop(&pipewire_logger, pipewire_event_sender, factory_sender)
-        .unwrap();
-
-    let _pipewire_factory_thread = thread::spawn(move || {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(async move {
-                let pipewire_factory =
-                    pipewire_factory::PipewireFactory::wait_and_new(factories_receiver).await;
-                pipewire_factory.run().await;
-            });
-    });
+    pipewire_loop::run_pipewire_loop(
+        &pipewire_logger,
+        pipewire_event_sender,
+        pipewire_factory_request_receiver,
+    )
+    .unwrap();
 
     Ok(())
 }

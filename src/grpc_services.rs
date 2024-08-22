@@ -1,3 +1,4 @@
+use crate::pipewire_factory::PipewireFactoryRequest;
 use crate::pipewire_registry::PipewireRegistryRequests;
 use pmx::pipewire::pipewire_server::{Pipewire, PipewireServer};
 
@@ -7,9 +8,9 @@ use pmx::pipewire::node::ListNode;
 use pmx::pipewire::port::ListPort;
 
 use pmx::pipewire::{
-    GetPortByObjectSerialRequest, ListApplicationsReply, ListApplicationsRequest, ListDevicesReply,
-    ListDevicesRequest, ListLinksReply, ListLinksRequest, ListNodesReply, ListNodesRequest,
-    ListPortsReply, ListPortsRequest,
+    CreateLinkReply, CreateLinkRequest, GetPortByObjectSerialRequest, ListApplicationsReply,
+    ListApplicationsRequest, ListDevicesReply, ListDevicesRequest, ListLinksReply,
+    ListLinksRequest, ListNodesReply, ListNodesRequest, ListPortsReply, ListPortsRequest,
 };
 
 use std::result::Result;
@@ -43,18 +44,39 @@ pub mod pmx {
 
 pub struct PipewireService {
     request_sender: tokio::sync::mpsc::UnboundedSender<PipewireRegistryRequests>,
+    pipewire_factory_request_sender: pipewire::channel::Sender<PipewireFactoryRequest>,
 }
 
 impl PipewireService {
     pub fn new_server(
         request_sender: tokio::sync::mpsc::UnboundedSender<PipewireRegistryRequests>,
+        pipewire_factory_request_sender: pipewire::channel::Sender<PipewireFactoryRequest>,
     ) -> PipewireServer<Self> {
-        PipewireServer::new(PipewireService { request_sender })
+        PipewireServer::new(PipewireService {
+            request_sender,
+            pipewire_factory_request_sender,
+        })
     }
 }
 
 #[tonic::async_trait]
 impl Pipewire for PipewireService {
+    async fn create_link(
+        &self,
+        request: Request<CreateLinkRequest>,
+    ) -> Result<Response<CreateLinkReply>, Status> {
+        let inner = request.into_inner();
+        self.pipewire_factory_request_sender
+            .send(PipewireFactoryRequest::CreateLink {
+                output_port_id: inner.output_port_id.to_string(),
+                input_port_id: inner.input_port_id.to_string(),
+                output_node_id: inner.output_node_id.to_string(),
+                input_node_id: inner.input_node_id.to_string(),
+            })
+            .unwrap();
+        Ok(Response::new(CreateLinkReply {}))
+    }
+
     async fn list_applications(
         &self,
         _request: Request<ListApplicationsRequest>,

@@ -14,11 +14,13 @@ use tokio::sync::mpsc::UnboundedSender as Sender;
 
 use crate::pipewire_event_consumer::PipewireEventConsumer;
 use crate::pipewire_event_consumer::PipewireUpdateEvent;
+use crate::pipewire_factory::PipewireFactory;
+use crate::pipewire_factory::PipewireFactoryRequest;
 
 pub fn run_pipewire_loop(
     logger: &Logger,
     pipewire_update_event_sender: Sender<PipewireUpdateEvent>,
-    factory_names_one_shot_sender: tokio::sync::oneshot::Sender<Factories>,
+    pipewire_factory_request_receiver: pipewire::channel::Receiver<PipewireFactoryRequest>,
 ) -> Result<()> {
     logger.log_info("Starting Pipewire Loop");
     pipewire::init();
@@ -34,8 +36,14 @@ pub fn run_pipewire_loop(
         .register();
 
     let factories = get_factory_names(&main_loop, &registry).unwrap();
-    factory_names_one_shot_sender.send(factories).unwrap();
+    let pipewire_factory = PipewireFactory { factories, core };
 
+    let _receiver = pipewire_factory_request_receiver.attach(
+        main_loop.loop_(),
+        move |command: PipewireFactoryRequest| {
+            pipewire_factory.process_command(command);
+        },
+    );
     main_loop.run();
 
     drop(listener);
@@ -46,7 +54,7 @@ pub fn run_pipewire_loop(
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct Factories {
-    link: String,
+    pub link: String,
 }
 
 fn get_factory_names(main_loop: &MainLoop, registry: &Registry) -> Result<Factories> {
