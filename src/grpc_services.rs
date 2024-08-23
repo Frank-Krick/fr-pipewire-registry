@@ -8,9 +8,10 @@ use pmx::pipewire::node::ListNode;
 use pmx::pipewire::port::ListPort;
 
 use pmx::pipewire::{
-    CreateLinkReply, CreateLinkRequest, GetPortByObjectSerialRequest, ListApplicationsReply,
-    ListApplicationsRequest, ListDevicesReply, ListDevicesRequest, ListLinksReply,
-    ListLinksRequest, ListNodesReply, ListNodesRequest, ListPortsReply, ListPortsRequest,
+    CreateLinkByNameRequest, CreateLinkReply, CreateLinkRequest, GetPortByObjectSerialRequest,
+    ListApplicationsReply, ListApplicationsRequest, ListDevicesReply, ListDevicesRequest,
+    ListLinksReply, ListLinksRequest, ListNodesReply, ListNodesRequest, ListPortsReply,
+    ListPortsRequest,
 };
 
 use std::result::Result;
@@ -72,6 +73,22 @@ impl Pipewire for PipewireService {
                 input_port_id: inner.input_port_id.to_string(),
                 output_node_id: inner.output_node_id.to_string(),
                 input_node_id: inner.input_node_id.to_string(),
+            })
+            .unwrap();
+        Ok(Response::new(CreateLinkReply {}))
+    }
+
+    async fn create_link_by_name(
+        &self,
+        request: Request<CreateLinkByNameRequest>,
+    ) -> Result<Response<CreateLinkReply>, Status> {
+        let inner = request.into_inner();
+        self.pipewire_factory_request_sender
+            .send(PipewireFactoryRequest::CreateLinkByNodeName {
+                output_port_id: inner.output_port_id.to_string(),
+                input_port_id: inner.input_port_id.to_string(),
+                output_node_name: inner.output_node_name,
+                input_node_name: inner.input_node_name,
             })
             .unwrap();
         Ok(Response::new(CreateLinkReply {}))

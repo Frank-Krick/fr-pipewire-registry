@@ -40,10 +40,18 @@ message CreateLinkRequest {
   uint32 input_node_id = 7;
 }
 
+message CreateLinkByNameRequest {
+  uint32 output_port_id = 4;
+  uint32 input_port_id = 5;
+  string output_node_name = 6;
+  string input_node_name = 7;
+}
+
 message CreateLinkReply {}
 
 service Pipewire {
   rpc CreateLink(CreateLinkRequest) returns (CreateLinkReply);
+  rpc CreateLinkByName(CreateLinkByNameRequest) returns (CreateLinkReply);
   rpc ListApplications(ListApplicationsRequest) returns (ListApplicationsReply);
   rpc ListNodes(ListNodesRequest) returns (ListNodesReply);
   rpc ListDevices(ListDevicesRequest) returns (ListDevicesReply);

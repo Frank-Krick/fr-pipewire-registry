@@ -10,6 +10,12 @@ pub enum PipewireFactoryRequest {
         output_node_id: String,
         input_node_id: String,
     },
+    CreateLinkByNodeName {
+        output_port_id: String,
+        input_port_id: String,
+        output_node_name: String,
+        input_node_name: String,
+    },
 }
 
 pub struct PipewireFactory {
@@ -20,6 +26,25 @@ pub struct PipewireFactory {
 impl PipewireFactory {
     pub fn process_command(&self, request: PipewireFactoryRequest) {
         match request {
+            PipewireFactoryRequest::CreateLinkByNodeName {
+                output_port_id,
+                input_port_id,
+                output_node_name,
+                input_node_name,
+            } => {
+                self.core
+                    .create_object::<pipewire::link::Link>(
+                        &self.factories.link,
+                        &pipewire::properties::properties! {
+                                    "link.output.port" => output_port_id,
+                                    "link.input.port" => input_port_id,
+                                    "link.output.node" => output_node_name,
+                                    "link.input.node" => input_node_name,
+                                    "object.linger" => "1"
+                        },
+                    )
+                    .unwrap();
+            }
             PipewireFactoryRequest::CreateLink {
                 output_port_id,
                 input_port_id,

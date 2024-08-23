@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use pmx::pipewire::pipewire_client::PipewireClient;
+use pmx::pipewire::CreateLinkByNameRequest;
 use pmx::pipewire::CreateLinkRequest;
 use pmx::pipewire::ListApplicationsRequest;
 use pmx::pipewire::ListDevicesRequest;
@@ -35,6 +36,16 @@ enum Commands {
         output_node_id: u32,
         #[arg(short = 'm', long)]
         input_node_id: u32,
+    },
+    CreateLinkByNodeNames {
+        #[arg(short = 'o', long)]
+        output_port_id: u32,
+        #[arg(short = 'i', long)]
+        input_port_id: u32,
+        #[arg(short = 'n', long)]
+        output_node_name: String,
+        #[arg(short = 'm', long)]
+        input_node_name: String,
     },
 }
 
@@ -72,6 +83,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(command) = cli_arguments.command {
         match command {
+            Commands::CreateLinkByNodeNames {
+                output_port_id,
+                input_port_id,
+                output_node_name,
+                input_node_name,
+            } => {
+                let request = Request::new(CreateLinkByNameRequest {
+                    output_port_id,
+                    input_port_id,
+                    output_node_name,
+                    input_node_name,
+                });
+                let response = client.create_link_by_name(request).await;
+                println!("Response={response:#?}");
+            }
             Commands::CreateLink {
                 output_port_id,
                 input_port_id,
