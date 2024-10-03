@@ -92,7 +92,7 @@ impl PipewireEventConsumer {
                         factory_id: String::from(props.get("factory.id").unwrap()),
                         client_id: String::from(props.get("client.id").unwrap()),
                         description: String::from(props.get("device.description").unwrap()),
-                        nick: String::from(props.get("device.nick").unwrap()),
+                        nick: String::from(props.get("device.nick").unwrap_or("None")),
                         media_class: String::from(props.get("media.class").unwrap()),
                         object_serial: String::from(props.get("object.serial").unwrap()),
                     })
@@ -111,7 +111,7 @@ impl PipewireEventConsumer {
                         alias: String::from(props.get("port.alias").unwrap()),
                         group: String::from(props.get("port.group").unwrap_or("")),
                         path: String::from(props.get("object.path").unwrap()),
-                        dsp_format: String::from(props.get("format.dsp").unwrap()),
+                        dsp_format: String::from(props.get("format.dsp").unwrap_or("None")),
                         node_id: String::from(props.get("node.id").unwrap()),
                         audio_channel: String::from(props.get("audio.channel").unwrap_or("")),
                     })
